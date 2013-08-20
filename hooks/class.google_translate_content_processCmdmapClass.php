@@ -155,6 +155,8 @@ class google_translate_content_processCmdmapClass extends t3lib_svbase {
                                             case "table":
                                                 $recordTranslted = $this->translatePageContent($row, $ln_iso2_from, $ln_iso2_to,$langRec['uid']);
                                                 break;
+                                            default:
+                                                return true;
 
                                         }
 
@@ -175,6 +177,49 @@ class google_translate_content_processCmdmapClass extends t3lib_svbase {
 										if ($Ttable === $table)	{
                                             $res = $TYPO3_DB->exec_INSERTquery($table,$overrideValues,$no_quote_fields = FALSE);
 
+                                            if($row['CType'] == "textpic"){
+                                                if($row['image']){
+                                                    $arrItem = array();
+                                                    $newValueArr = array();
+                                                    $finalArr = array();
+                                                    $inserId = $TYPO3_DB->sql_insert_id();
+                                                    $uid = $row['uid'];
+                                                    $uqery = $TYPO3_DB->exec_SELECTquery('*','sys_file_reference',"uid_foreign=$uid and deleted=0 and hidden=0",'','','');
+                                                    while ($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($uqery)) {
+
+                                                        $arrItem[] = $row;
+                                                    }
+
+                                                    //remove old key
+                                                    if(empty($arrItem) == false){
+
+                                                        foreach($arrItem as $key=>$value){
+                                                            $uid = $value['uid'];
+                                                            foreach($value as $key2=>$value2){
+                                                                if($key2 == "uid" || $key2 =="sys_language_uid" || $key2 == "uid_foreign"){
+                                                                    $newValueArr[$key2];
+                                                                }else{
+                                                                    $newValueArr[$key][$key2] = $value2;
+                                                                }
+
+                                                            }
+                                                            $newValueArr[$key]['sys_language_uid'] = $langRec['uid'];
+                                                            $newValueArr[$key]['uid_foreign'] = $inserId;
+                                                            $newValueArr[$key]['l10n_parent'] =  $uid;
+                                                        }
+
+                                                        //save
+
+                                                        foreach($newValueArr as $key=> $value){
+                                                            $res = $TYPO3_DB->exec_INSERTquery('sys_file_reference',$value,$no_quote_fields = FALSE);
+                                                        }
+
+
+                                                    }
+
+
+                                                }
+                                            }
 										} else {
 
 												// Create new record:
@@ -270,20 +315,17 @@ class google_translate_content_processCmdmapClass extends t3lib_svbase {
         $supportArrayToTranslate = array();
         foreach($wordKey as $key=>$value){
             if($first){
-                //echo '0->'.$value."<br />";
                 $supportArrayToTranslate[] = implode("",array_slice($textArr,0,$value));
                 $first = FALSE;
                 $nextItem = $value +1;
 
             }else{
-                //echo $nextItem.'->'.$value."<br />";
                 $supportArrayToTranslate[] = implode("",array_slice($textArr,$nextItem,$value));
                 $nextItem = $value +1;
             }
         }
 
         if(end($wordKey) !=  $count){
-            //echo $nextItem.'->'.$count."<br />";
             $supportArrayToTranslate[] = implode("",array_slice($textArr,(end($wordKey)+1),$count));
         }
 
