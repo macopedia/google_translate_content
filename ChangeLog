@@ -1,0 +1,7 @@
+03-03-08 Daniel Wegener  <avithan@googlemail.com>
+
+	* Added support for automated translations over more than one language. Did some code cleanup and naming changes.
+
+13-02-08 Daniel Wegener  <avithan@googlemail.com>
+
+	* Initial release
